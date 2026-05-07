@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\FeedController;
+use App\Http\Controllers\Api\PetController;
 use App\Http\Controllers\Api\UserLocationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +12,8 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::patch('/user/location', [UserLocationController::class, 'update']);
+    Route::apiResource('pets', PetController::class);
+    Route::get('/feed', [FeedController::class, 'index']);
 });
 
 require __DIR__.'/auth.php';
