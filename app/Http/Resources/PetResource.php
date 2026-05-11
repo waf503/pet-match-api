@@ -10,7 +10,6 @@ class PetResource extends JsonResource
 {
     public function toArray(Request $request): array
     {
-        // Obtener fotos desde la relación si está cargada
         $fotosRelation = $this->whenLoaded('photos', function () {
             return $this->photos->map(fn ($p) => [
                 'id'  => $p->id,
@@ -18,7 +17,6 @@ class PetResource extends JsonResource
             ])->values();
         });
 
-        // foto principal: primera foto de la relación o la columna foto de respaldo
         $fotoUrl = $this->whenLoaded(
             'photos',
             function () {
@@ -39,6 +37,8 @@ class PetResource extends JsonResource
             'descripcion' => $this->descripcion,
             'foto'        => $fotoUrl,
             'fotos'       => $fotosRelation,
+            'liked'       => (bool) ($this->liked ?? false),
+            'likes_count' => (int) ($this->likes_count ?? 0),
             'owner'       => [
                 'id'   => $this->user->id,
                 'name' => $this->user->name,

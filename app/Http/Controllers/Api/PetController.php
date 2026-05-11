@@ -23,6 +23,7 @@ class PetController extends Controller
         $pets = $request->user()
             ->pets()
             ->with('user', 'photos')
+            ->withCount('likedByUsers as likes_count')
             ->latest()
             ->get();
 
@@ -39,7 +40,6 @@ class PetController extends Controller
 
         $pet = $request->user()->pets()->create($data);
 
-        // Guardar fotos en pet_photos y sincronizar pets.foto con la primera
         foreach ($request->file('fotos') as $i => $file) {
             $path = $file->store('pets', 'public');
             $pet->photos()->create(['path' => $path, 'orden' => $i]);
@@ -59,7 +59,13 @@ class PetController extends Controller
      */
     public function show(Request $request, Pet $pet): JsonResponse
     {
-        return response()->json(new PetResource($pet->load('user', 'photos')));
+        $pet->load('user', 'photos');
+        $pet->loadCount('likedByUsers as likes_count');
+        $pet->liked = $pet->likedByUsers()
+            ->where('user_id', $request->user()->id)
+            ->exists();
+
+        return response()->json(new PetResource($pet));
     }
 
     /**
@@ -74,7 +80,6 @@ class PetController extends Controller
         $data = $request->validated();
         unset($data['fotos'], $data['delete_photo_ids']);
 
-        // Eliminar fotos solicitadas
         if ($request->has('delete_photo_ids')) {
             foreach ((array) $request->input('delete_photo_ids') as $photoId) {
                 $photo = $pet->photos()->find($photoId);
@@ -85,7 +90,6 @@ class PetController extends Controller
             }
         }
 
-        // Agregar nuevas fotos (respetando el límite de 3 en total)
         if ($request->hasFile('fotos')) {
             $currentCount = $pet->photos()->count();
             foreach ($request->file('fotos') as $file) {
@@ -96,7 +100,6 @@ class PetController extends Controller
             }
         }
 
-        // Sincronizar pets.foto con la primera foto disponible
         $firstPhoto = $pet->photos()->orderBy('orden')->first();
         $data['foto'] = $firstPhoto ? $firstPhoto->path : null;
 
@@ -143,10 +146,25 @@ class PetController extends Controller
         Storage::disk('public')->delete($photo->path);
         $photo->delete();
 
-        // Sincronizar pets.foto
         $firstPhoto = $pet->photos()->orderBy('orden')->first();
         $pet->update(['foto' => $firstPhoto ? $firstPhoto->path : null]);
 
         return response()->json(['message' => 'Foto eliminada.']);
+    }
+
+    /**
+     * Alterna el like del usuario autenticado en una mascota.
+     */
+    public function toggleLike(Request $request, Pet $pet): JsonResponse
+    {
+        $userId = $request->user()->id;
+
+        $result = $pet->likedByUsers()->toggle($userId);
+        $liked  = count($result['attached']) > 0;
+
+        return response()->json([
+            'liked'       => $liked,
+            'likes_count' => $pet->likedByUsers()->count(),
+        ]);
     }
 }

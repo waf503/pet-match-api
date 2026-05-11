@@ -16,12 +16,17 @@ class FeedController extends Controller
         $especie  = $request->query('especie');
 
         $pets = Pet::with('user', 'photos')
+            ->withCount('likedByUsers as likes_count')
             ->where('user_id', '!=', $authUser->id)
             ->whereNotNull('foto')
             ->when($especie, fn ($q) => $q->where('especie', $especie))
             ->get();
 
-        // Ordenar por distancia si el usuario tiene ubicación guardada
+        // Marcar cuáles ya dio like el usuario autenticado (1 sola query extra)
+        $likedIds = $authUser->likedPets()->pluck('pet_id')->toArray();
+        $pets->each(fn ($p) => $p->liked = in_array($p->id, $likedIds));
+
+        // Ordenar por distancia
         $authLat = (float) $authUser->latitude;
         $authLng = (float) $authUser->longitude;
 
@@ -46,7 +51,7 @@ class FeedController extends Controller
 
     private function haversine(float $lat1, float $lng1, float $lat2, float $lng2): float
     {
-        $R    = 6371; // Radio de la Tierra en km
+        $R    = 6371;
         $dLat = deg2rad($lat2 - $lat1);
         $dLng = deg2rad($lng2 - $lng1);
 
