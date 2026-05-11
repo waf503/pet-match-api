@@ -21,7 +21,8 @@ class StorePetRequest extends FormRequest
             'raza'        => ['nullable', 'string', 'max:100'],
             'edad'        => ['nullable', 'integer', 'min:0', 'max:30'],
             'descripcion' => ['nullable', 'string', 'max:500'],
-            'foto'        => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'fotos'       => ['required', 'array', 'min:1', 'max:3'],
+            'fotos.*'     => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
         ];
     }
 }

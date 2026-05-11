@@ -14,6 +14,7 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::patch('/user/location', [UserLocationController::class, 'update']);
     Route::apiResource('pets', PetController::class);
+    Route::delete('/pets/{pet}/photos/{photo}', [PetController::class, 'destroyPhoto']);
     Route::get('/feed', [FeedController::class, 'index']);
     Route::get('/profile', [ProfileController::class, 'show']);
     Route::post('/profile', [ProfileController::class, 'update']); // POST con _method PATCH para multipart

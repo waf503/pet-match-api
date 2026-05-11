@@ -15,7 +15,7 @@ class FeedController extends Controller
         $authUser = $request->user();
         $especie  = $request->query('especie');
 
-        $pets = Pet::with('user')
+        $pets = Pet::with('user', 'photos')
             ->where('user_id', '!=', $authUser->id)
             ->whereNotNull('foto')
             ->when($especie, fn ($q) => $q->where('especie', $especie))
