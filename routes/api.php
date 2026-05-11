@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\FeedController;
 use App\Http\Controllers\Api\PetController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\UserLocationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -14,6 +15,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::patch('/user/location', [UserLocationController::class, 'update']);
     Route::apiResource('pets', PetController::class);
     Route::get('/feed', [FeedController::class, 'index']);
+    Route::get('/profile', [ProfileController::class, 'show']);
+    Route::post('/profile', [ProfileController::class, 'update']); // POST con _method PATCH para multipart
 });
 
 require __DIR__.'/auth.php';
