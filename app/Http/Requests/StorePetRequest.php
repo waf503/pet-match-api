@@ -18,7 +18,8 @@ class StorePetRequest extends FormRequest
         return [
             'nombre'      => ['required', 'string', 'max:100'],
             'especie'     => ['required', 'in:Perro,Gato,Otro'],
-            'raza'        => ['nullable', 'string', 'max:100'],
+            'raza'        => ['nullable', 'array'],
+            'raza.*'      => ['string', 'max:150'],
             'edad'        => ['nullable', 'integer', 'min:0', 'max:30'],
             'descripcion' => ['nullable', 'string', 'max:500'],
             'fotos'       => ['required', 'array', 'min:1', 'max:3'],

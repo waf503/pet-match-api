@@ -32,7 +32,7 @@ class PetResource extends JsonResource
             'id'          => $this->id,
             'nombre'      => $this->nombre,
             'especie'     => $this->especie,
-            'raza'        => $this->raza,
+            'raza'        => is_array($this->raza) ? $this->raza : (($this->raza && $this->raza !== '') ? [$this->raza] : []),
             'edad'        => $this->edad,
             'descripcion' => $this->descripcion,
             'foto'        => $fotoUrl,

@@ -11,6 +11,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 #[Fillable(['user_id', 'nombre', 'especie', 'raza', 'edad', 'descripcion', 'foto'])]
 class Pet extends Model
 {
+    protected $casts = [
+        'raza' => 'array',
+    ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

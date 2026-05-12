@@ -37,6 +37,7 @@ class PetController extends Controller
     {
         $data = $request->validated();
         unset($data['fotos']);
+        $data['raza'] = $data['raza'] ?? [];
 
         $pet = $request->user()->pets()->create($data);
 
@@ -79,6 +80,7 @@ class PetController extends Controller
 
         $data = $request->validated();
         unset($data['fotos'], $data['delete_photo_ids']);
+        $data['raza'] = $data['raza'] ?? [];
 
         if ($request->has('delete_photo_ids')) {
             foreach ((array) $request->input('delete_photo_ids') as $photoId) {
