@@ -43,8 +43,13 @@ class PetResource extends JsonResource
                 'id'   => $this->user->id,
                 'name' => $this->user->name,
             ],
-            'distance_km' => $this->whenNotNull($this->distance_km ?? null),
-            'created_at'  => $this->created_at->toDateString(),
+            'distance_km'  => $this->whenNotNull($this->distance_km ?? null),
+            'created_at'   => $this->created_at->toDateString(),
+            // Estado del match desde la perspectiva del usuario autenticado
+            // Solo presente cuando se carga el detalle (show), no en listados
+            'match_status' => $this->match_status ?? null,  // none|pending_sent|matched
+            'match_id'     => $this->match_id     ?? null,
+            'proposal_id'  => $this->proposal_id  ?? null,
         ];
     }
 }

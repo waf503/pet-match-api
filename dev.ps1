@@ -1,5 +1,5 @@
-$laravelCommand = "php -S 172.20.10.3:8000 -t public"
-#$laravelCommand = "php -S 192.168.1.89:8000 -t public"
+#$laravelCommand = "php -S 172.20.10.3:8000 -t public"
+$laravelCommand = "php -S 192.168.1.89:8000 -t public"
 #$reverbCommand  = "php artisan reverb:start --debug"
 #$queueCommand    = "php artisan queue:listen"
 # Obtener la ruta absoluta actual de forma robusta

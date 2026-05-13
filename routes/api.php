@@ -33,6 +33,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
     Route::get('/match-proposals', [MatchProposalController::class, 'index']);
     Route::post('/match-proposals', [MatchProposalController::class, 'store']);
     Route::patch('/match-proposals/{proposal}', [MatchProposalController::class, 'update']);
+    Route::delete('/match-proposals/{proposal}', [MatchProposalController::class, 'destroy']);
 
     // Matches
     Route::get('/matches', [MatchController::class, 'index']);

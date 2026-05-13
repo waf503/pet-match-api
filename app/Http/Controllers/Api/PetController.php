@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePetRequest;
 use App\Http\Requests\UpdatePetRequest;
 use App\Http\Resources\PetResource;
+use App\Models\MatchProposal;
 use App\Models\Pet;
+use App\Models\PetMatch;
 use App\Models\PetPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -56,15 +58,62 @@ class PetController extends Controller
     }
 
     /**
-     * Muestra el detalle de una mascota.
+     * Muestra el detalle de una mascota, incluyendo el estado del match
+     * desde la perspectiva del usuario autenticado.
      */
     public function show(Request $request, Pet $pet): JsonResponse
     {
+        $userId = $request->user()->id;
+
         $pet->load('user', 'photos');
         $pet->loadCount('likedByUsers as likes_count');
-        $pet->liked = $pet->likedByUsers()
-            ->where('user_id', $request->user()->id)
-            ->exists();
+        $pet->liked = $pet->likedByUsers()->where('user_id', $userId)->exists();
+
+        // ── Estado de match desde la perspectiva del auth user ────────────────
+        $matchStatus = 'none';
+        $matchId     = null;
+        $proposalId  = null;
+
+        // ¿Ya hay un match activo entre alguna mascota del user y esta?
+        $activeMatch = PetMatch::where(function ($q) use ($pet) {
+                $q->where('pet_a_id', $pet->id)->orWhere('pet_b_id', $pet->id);
+            })
+            ->where(function ($q) use ($userId) {
+                $q->where('user_a_id', $userId)->orWhere('user_b_id', $userId);
+            })
+            ->where('status', 'active')
+            ->first();
+
+        if ($activeMatch) {
+            $matchStatus = 'matched';
+            $matchId     = $activeMatch->id;
+        } else {
+            // ¿Hay una propuesta pendiente que esta mascota le envió al auth user?
+            $pendingReceived = MatchProposal::where('from_pet_id', $pet->id)
+                ->where('to_user_id', $userId)
+                ->where('status', 'pending')
+                ->first();
+
+            if ($pendingReceived) {
+                $matchStatus = 'pending_received';
+                $proposalId  = $pendingReceived->id;
+            } else {
+                // ¿Hay una propuesta pendiente enviada por el auth user hacia esta mascota?
+                $pendingSent = MatchProposal::where('to_pet_id', $pet->id)
+                    ->where('from_user_id', $userId)
+                    ->where('status', 'pending')
+                    ->first();
+
+                if ($pendingSent) {
+                    $matchStatus = 'pending_sent';
+                    $proposalId  = $pendingSent->id;
+                }
+            }
+        }
+
+        $pet->match_status = $matchStatus;
+        $pet->match_id     = $matchId;
+        $pet->proposal_id  = $proposalId;
 
         return response()->json(new PetResource($pet));
     }

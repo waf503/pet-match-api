@@ -8,6 +8,7 @@ use App\Models\MatchProposal;
 use App\Models\PetMatch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class MatchProposalController extends Controller
 {
@@ -21,7 +22,25 @@ class MatchProposalController extends Controller
                 'fromUser:id,name,foto',
             ])
             ->latest()
-            ->get();
+            ->get()
+            ->map(function (MatchProposal $p) {
+                $pet  = $p->fromPet;
+                $foto = $pet->foto ? Storage::disk('public')->url($pet->foto) : null;
+
+                return [
+                    'id'         => $p->id,
+                    'created_at' => $p->created_at,
+                    'from_pet'   => [
+                        'id'     => $pet->id,
+                        'nombre' => $pet->nombre,
+                        'foto'   => $foto,
+                    ],
+                    'from_user'  => [
+                        'id'   => $p->fromUser->id,
+                        'name' => $p->fromUser->name,
+                    ],
+                ];
+            });
 
         return response()->json($proposals);
     }
@@ -103,15 +122,36 @@ class MatchProposalController extends Controller
                 'user_b_id'   => $proposal->to_user_id,
             ]);
 
+            // Notificar al proponente
             AppNotification::create([
                 'user_id' => $proposal->from_user_id,
                 'type'    => 'match_confirmed',
                 'data'    => [
-                    'match_id'    => $match->id,
-                    'pet_a_name'  => $proposal->fromPet->nombre,
-                    'pet_b_name'  => $proposal->toPet->nombre,
+                    'match_id'   => $match->id,
+                    'pet_a_name' => $proposal->fromPet->nombre,
+                    'pet_b_name' => $proposal->toPet->nombre,
                 ],
             ]);
+
+            // Auto-rechazar las demás propuestas pendientes hacia esta mascota
+            $others = MatchProposal::where('to_pet_id', $proposal->to_pet_id)
+                ->where('id', '!=', $proposal->id)
+                ->where('status', 'pending')
+                ->with('fromPet:id,nombre')
+                ->get();
+
+            foreach ($others as $other) {
+                $other->update(['status' => 'rejected']);
+                AppNotification::create([
+                    'user_id' => $other->from_user_id,
+                    'type'    => 'match_rejected',
+                    'data'    => [
+                        'from_pet_name' => $other->fromPet->nombre,
+                        'to_pet_name'   => $proposal->toPet->nombre,
+                        'auto'          => true,
+                    ],
+                ]);
+            }
 
             return response()->json($match->load(['petA:id,nombre,foto', 'petB:id,nombre,foto']));
         }
@@ -129,5 +169,20 @@ class MatchProposalController extends Controller
         ]);
 
         return response()->json(['message' => 'Propuesta rechazada.']);
+    }
+
+    // DELETE /match-proposals/{proposal} — cancelar propuesta propia
+    public function destroy(Request $request, MatchProposal $proposal): JsonResponse
+    {
+        if ($proposal->from_user_id !== $request->user()->id) {
+            return response()->json(['message' => 'No autorizado.'], 403);
+        }
+        if ($proposal->status !== 'pending') {
+            return response()->json(['message' => 'Solo puedes cancelar propuestas pendientes.'], 400);
+        }
+
+        $proposal->delete();
+
+        return response()->json(['message' => 'Propuesta cancelada.']);
     }
 }
