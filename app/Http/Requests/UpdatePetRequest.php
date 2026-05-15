@@ -17,13 +17,13 @@ class UpdatePetRequest extends FormRequest
     {
         return [
             'nombre'              => ['sometimes', 'required', 'string', 'max:100'],
-            'especie'             => ['sometimes', 'required', 'in:Perro,Gato,Otro'],
+            'especie'             => ['sometimes', 'required', 'string', 'max:100'],
             'raza'                => ['nullable', 'array'],
             'raza.*'              => ['string', 'max:150'],
             'edad'                => ['nullable', 'integer', 'min:0', 'max:30'],
             'descripcion'         => ['nullable', 'string', 'max:500'],
             'fotos'               => ['nullable', 'array', 'max:3'],
-            'fotos.*'             => ['image', 'mimes:jpg,jpeg,png,webp,heic,heif', 'max:5120'],
+            'fotos.*'             => ['file', 'mimes:jpg,jpeg,png,webp,heic,heif', 'max:5120'],
             'delete_photo_ids'    => ['nullable', 'array'],
             'delete_photo_ids.*'  => ['integer'],
         ];

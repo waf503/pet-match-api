@@ -17,13 +17,13 @@ class StorePetRequest extends FormRequest
     {
         return [
             'nombre'      => ['required', 'string', 'max:100'],
-            'especie'     => ['required', 'in:Perro,Gato,Otro'],
+            'especie'     => ['required', 'string', 'max:100'],
             'raza'        => ['nullable', 'array'],
             'raza.*'      => ['string', 'max:150'],
             'edad'        => ['nullable', 'integer', 'min:0', 'max:30'],
             'descripcion' => ['nullable', 'string', 'max:500'],
             'fotos'       => ['required', 'array', 'min:1', 'max:3'],
-            'fotos.*'     => ['image', 'mimes:jpg,jpeg,png,webp,heic,heif', 'max:5120'],
+            'fotos.*'     => ['file', 'mimes:jpg,jpeg,png,webp,heic,heif', 'max:5120'],
         ];
     }
 }
