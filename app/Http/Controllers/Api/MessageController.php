@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\MessageSent;
 use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
 use App\Models\MatchMessage;
@@ -67,9 +68,15 @@ class MessageController extends Controller
             ],
         ]);
 
-        // Touch match to update updated_at for ordering
+        // Touch match para updated_at (ordenamiento en la lista de matches)
         $match->touch();
 
-        return response()->json($message->load('user:id,name,foto'), 201);
+        // Cargar relación user antes de emitir (broadcastWith la necesita)
+        $message->load('user');
+
+        // Emitir evento WebSocket en tiempo real al canal privado del match
+        broadcast(new MessageSent($message))->toOthers();
+
+        return response()->json($message, 201);
     }
 }

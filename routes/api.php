@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\PetController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\UserLocationController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 // Catálogo público — no requiere autenticación
@@ -18,6 +19,11 @@ Route::get('/catalog/breeds',  [CatalogController::class, 'breeds']);
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
+});
+
+// Auth de canales privados de broadcasting — requiere token Sanctum
+Route::middleware(['auth:sanctum'])->post('/broadcasting/auth', function (Request $request) {
+    return Broadcast::auth($request);
 });
 
 Route::middleware(['auth:sanctum'])->group(function () {
