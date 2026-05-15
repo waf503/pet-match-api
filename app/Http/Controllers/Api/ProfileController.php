@@ -39,7 +39,7 @@ class ProfileController extends Controller
             'name'  => ['sometimes', 'string', 'max:100'],
             'bio'   => ['nullable', 'string', 'max:300'],
             'email' => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
-            'foto'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'foto'  => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,heic,heif', 'max:5120'],
         ]);
 
         if ($request->hasFile('foto')) {
