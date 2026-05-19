@@ -13,6 +13,7 @@ use App\Models\PetPhoto;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class PetController extends Controller
@@ -38,16 +39,18 @@ class PetController extends Controller
     public function store(StorePetRequest $request): JsonResponse
     {
         $data = $request->validated();
-        unset($data['fotos']);
+        unset($data['fotos'], $data['fotos_base64']);
         $data['raza'] = $data['raza'] ?? [];
 
         $pet = $request->user()->pets()->create($data);
 
-        foreach ($request->file('fotos') as $i => $file) {
-            $path = $file->store('pets', 'public');
-            $pet->photos()->create(['path' => $path, 'orden' => $i]);
+        foreach ($request->input('fotos_base64', []) as $i => $b64) {
+            $imageData = base64_decode($b64);
+            $filename  = 'pets/' . \Illuminate\Support\Str::uuid() . '.jpg';
+            \Illuminate\Support\Facades\Storage::disk('public')->put($filename, $imageData);
+            $pet->photos()->create(['path' => $filename, 'orden' => $i]);
             if ($i === 0) {
-                $pet->update(['foto' => $path]);
+                $pet->update(['foto' => $filename]);
             }
         }
 
@@ -128,7 +131,7 @@ class PetController extends Controller
         }
 
         $data = $request->validated();
-        unset($data['fotos'], $data['delete_photo_ids']);
+        unset($data['fotos'], $data['fotos_base64'], $data['delete_photo_ids']);
         $data['raza'] = $data['raza'] ?? [];
 
         if ($request->has('delete_photo_ids')) {
@@ -141,14 +144,13 @@ class PetController extends Controller
             }
         }
 
-        if ($request->hasFile('fotos')) {
+        foreach ($request->input('fotos_base64', []) as $b64) {
             $currentCount = $pet->photos()->count();
-            foreach ($request->file('fotos') as $file) {
-                if ($currentCount >= 3) break;
-                $path = $file->store('pets', 'public');
-                $pet->photos()->create(['path' => $path, 'orden' => $currentCount]);
-                $currentCount++;
-            }
+            if ($currentCount >= 3) break;
+            $imageData = base64_decode($b64);
+            $filename  = 'pets/' . \Illuminate\Support\Str::uuid() . '.jpg';
+            \Illuminate\Support\Facades\Storage::disk('public')->put($filename, $imageData);
+            $pet->photos()->create(['path' => $filename, 'orden' => $currentCount]);
         }
 
         $firstPhoto = $pet->photos()->orderBy('orden')->first();
@@ -201,6 +203,24 @@ class PetController extends Controller
         $pet->update(['foto' => $firstPhoto ? $firstPhoto->path : null]);
 
         return response()->json(['message' => 'Foto eliminada.']);
+    }
+
+    /**
+     * Devuelve las mascotas que el usuario autenticado ha marcado como favoritas.
+     */
+    public function likedPets(Request $request): AnonymousResourceCollection
+    {
+        $pets = $request->user()
+            ->likedPets()
+            ->with('user', 'photos')
+            ->withCount('likedByUsers as likes_count')
+            ->latest('pet_likes.created_at')
+            ->get()
+            ->each(function (Pet $pet) {
+                $pet->liked = true;
+            });
+
+        return PetResource::collection($pets);
     }
 
     /**

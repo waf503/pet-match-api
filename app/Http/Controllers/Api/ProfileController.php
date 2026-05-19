@@ -36,18 +36,21 @@ class ProfileController extends Controller
         $user = $request->user();
 
         $data = $request->validate([
-            'name'  => ['sometimes', 'string', 'max:100'],
-            'bio'   => ['nullable', 'string', 'max:300'],
-            'email' => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
-            'foto'  => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,heic,heif', 'max:5120'],
+            'name'        => ['sometimes', 'string', 'max:100'],
+            'bio'         => ['nullable', 'string', 'max:300'],
+            'email'       => ['sometimes', 'email', Rule::unique('users')->ignore($user->id)],
+            'foto_base64' => ['nullable', 'string'],
         ]);
 
-        if ($request->hasFile('foto')) {
+        if (!empty($data['foto_base64'])) {
             if ($user->foto) {
                 Storage::disk('public')->delete($user->foto);
             }
-            $data['foto'] = $request->file('foto')->store('avatars', 'public');
+            $filename        = 'avatars/' . \Illuminate\Support\Str::uuid() . '.jpg';
+            Storage::disk('public')->put($filename, base64_decode($data['foto_base64']));
+            $data['foto']    = $filename;
         }
+        unset($data['foto_base64']);
 
         $user->update($data);
 

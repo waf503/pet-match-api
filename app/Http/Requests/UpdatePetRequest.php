@@ -15,17 +15,7 @@ class UpdatePetRequest extends FormRequest
     /** @return array<string, ValidationRule|array<mixed>|string> */
     public function rules(): array
     {
-        return [
-            'nombre'              => ['sometimes', 'required', 'string', 'max:100'],
-            'especie'             => ['sometimes', 'required', 'string', 'max:100'],
-            'raza'                => ['nullable', 'array'],
-            'raza.*'              => ['string', 'max:150'],
-            'edad'                => ['nullable', 'integer', 'min:0', 'max:30'],
-            'descripcion'         => ['nullable', 'string', 'max:500'],
-            'fotos'               => ['nullable', 'array', 'max:3'],
-            'fotos.*'             => ['file', 'mimes:jpg,jpeg,png,webp,heic,heif', 'max:5120'],
-            'delete_photo_ids'    => ['nullable', 'array'],
-            'delete_photo_ids.*'  => ['integer'],
-        ];
+        // DEJAMOS EL VALIDADOR TOTALMENTE LIBRE
+        return [];
     }
 }

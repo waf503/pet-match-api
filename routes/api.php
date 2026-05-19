@@ -28,6 +28,7 @@ Route::middleware(['auth:sanctum'])->post('/broadcasting/auth', function (Reques
 
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::patch('/user/location', [UserLocationController::class, 'update']);
+    Route::get('/pets/liked', [PetController::class, 'likedPets']); // antes del apiResource para evitar conflicto con {pet}
     Route::apiResource('pets', PetController::class);
     Route::delete('/pets/{pet}/photos/{photo}', [PetController::class, 'destroyPhoto']);
     Route::post('/pets/{pet}/like', [PetController::class, 'toggleLike']);
