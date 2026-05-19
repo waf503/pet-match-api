@@ -79,4 +79,12 @@ class NotificationController extends Controller
 
         return response()->json($notification);
     }
+
+    // DELETE /notifications — elimina todas las notificaciones del usuario
+    public function deleteAll(Request $request): JsonResponse
+    {
+        AppNotification::where('user_id', $request->user()->id)->delete();
+
+        return response()->json(['message' => 'Notificaciones eliminadas.']);
+    }
 }
