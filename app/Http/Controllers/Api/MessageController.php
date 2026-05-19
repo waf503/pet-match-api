@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Events\MessageSent;
+use App\Events\NewMessageNotification;
 use App\Http\Controllers\Controller;
 use App\Models\AppNotification;
 use App\Models\MatchMessage;
@@ -74,8 +75,37 @@ class MessageController extends Controller
         // Cargar relación user antes de emitir (broadcastWith la necesita)
         $message->load('user');
 
-        // Emitir evento WebSocket en tiempo real al canal privado del match
+        // ─── Tiempo real: dos canales, dos propósitos ─────────────────────────
+        //
+        // 1) MessageSent → canal del match
+        //    Lo consumen solo los dos participantes mientras tienen la pantalla
+        //    de chat abierta y suscrita a private-match.{id}.
         broadcast(new MessageSent($message))->toOthers();
+
+        // 2) NewMessageNotification → canal personal del destinatario
+        //    Vive durante TODA la sesión autenticada (BadgeContext), así que
+        //    actualiza badges/contadores estando en cualquier pantalla.
+        //    Calculamos el total autoritativo aquí para que el cliente solo
+        //    asigne (single source of truth).
+        $unreadTotal = MatchMessage::whereHas('match', function ($q) use ($otherUserId) {
+                $q->where('user_a_id', $otherUserId)
+                  ->orWhere('user_b_id', $otherUserId);
+            })
+            ->where('user_id', '!=', $otherUserId)
+            ->whereNull('read_at')
+            ->count();
+
+        $unreadInMatch = $match->messages()
+            ->where('user_id', '!=', $otherUserId)
+            ->whereNull('read_at')
+            ->count();
+
+        broadcast(new NewMessageNotification(
+            recipientId:   $otherUserId,
+            message:       $message,
+            unreadTotal:   $unreadTotal,
+            unreadInMatch: $unreadInMatch,
+        ));
 
         return response()->json($message, 201);
     }
