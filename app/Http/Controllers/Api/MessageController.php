@@ -10,6 +10,7 @@ use App\Models\MatchMessage;
 use App\Models\PetMatch;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class MessageController extends Controller
 {
@@ -31,6 +32,23 @@ class MessageController extends Controller
             ->with('user:id,name,foto')
             ->oldest()
             ->get();
+
+        // Normalizar la foto a URL pública (consistente con el broadcast MessageSent).
+        // Defensivo: si foto ya viene como URL absoluta (http://… / https://…)
+        // no la envolvemos otra vez. Si es path relativo, lo resolvemos contra
+        // el disco "public". Si es null o cadena vacía, lo dejamos en null.
+        $messages->each(function (MatchMessage $msg) {
+            if (! $msg->user) return;
+            $foto = $msg->user->foto;
+            if (empty($foto)) {
+                $msg->user->foto = null;
+                return;
+            }
+            if (str_starts_with($foto, 'http://') || str_starts_with($foto, 'https://')) {
+                return; // ya es absoluta
+            }
+            $msg->user->foto = Storage::disk('public')->url($foto);
+        });
 
         return response()->json($messages);
     }
