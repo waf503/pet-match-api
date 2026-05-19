@@ -5,7 +5,7 @@ namespace App\Events;
 use App\Models\MatchMessage;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PrivateChannel;
+use Illuminate\Broadcasting\PresenceChannel;
 use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -18,12 +18,13 @@ class MessageSent implements ShouldBroadcast
     public function __construct(public MatchMessage $message) {}
 
     /**
-     * Canal privado del match — solo los dos dueños lo escuchan.
+     * Canal de presencia del match — solo los dos dueños lo escuchan
+     * y además sabemos en tiempo real quién está suscrito (online).
      */
     public function broadcastOn(): array
     {
         return [
-            new PrivateChannel('match.' . $this->message->match_id),
+            new PresenceChannel('match.' . $this->message->match_id),
         ];
     }
 
